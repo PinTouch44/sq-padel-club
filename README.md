@@ -27,3 +27,9 @@ Sans cette fonction, tout marche quand même, simplement aucun e-mail n'est envo
 - Bouton « Inviter un ami » (WhatsApp) sur chaque événement et après l'inscription: rien à configurer.
 - Bouton « Rejoindre le groupe WhatsApp » sur l'accueil: coller le lien d'invitation du groupe dans Admin → Réglages → Communauté.
 - « Qui joue »: chaque joueur peut masquer son nom dans Profil.
+
+## E-mails (v0.23)
+
+Cinq e-mails avec logo: bienvenue, inscription en attente de paiement, inscription confirmée, compte supprimé (et données effacées), mot de passe oublié.
+Les quatre premiers partent de la fonction `notify` (voir plus haut, secrets `BREVO_API_KEY` et `MAIL_FROM`).
+Le mail « mot de passe oublié » se règle dans Supabase → Authentication → Email Templates → Reset Password: coller `supabase/email-templates/reset-password.html`.

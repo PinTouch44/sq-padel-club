@@ -839,7 +839,7 @@ const chev='<svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColo
 function courtSVG(stroke,op){return '<svg class="lines" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="'+stroke+'" stroke-opacity="'+(op||.35)+'" stroke-width="2"><rect x="40" y="20" width="320" height="160"/><path d="M200 10v180M88 20v160M312 20v160M88 100h224"/></g></svg>';}
 
 /* ---------- i18n scaffold (EN live, FR prepared) ---------- */
-const APP_VERSION="0.22";
+const APP_VERSION="0.23";
 const STR={en:{home:"Home",events:"Events",bookings:"Bookings",profile:"Profile"},fr:{home:"Accueil",events:"Événements",bookings:"Réservations",profile:"Profil"},de:{home:"Start",events:"Events",bookings:"Buchungen",profile:"Profil"}};
 let LANG=(()=>{try{const l=localStorage.getItem("sqpc-lang");if(l==="fr"||l==="de"||l==="en")return l;}catch(err){}const n=String((navigator.languages&&navigator.languages[0])||navigator.language||"en").slice(0,2).toLowerCase();return n==="fr"||n==="de"?n:"en";})();
 const t=k=>(STR[LANG]&&STR[LANG][k])||STR.en[k]||k;
@@ -1628,8 +1628,11 @@ const OBA={
     applyAccount();S.tab="home";S.stack.home=[];go();render();toast("Welcome, "+o.first.trim());},
   delaccount(){S.sheet={type:"confirm",title:"Delete my account?",text:"This permanently deletes your account and all your bookings. This can’t be undone.",act:"dodelaccount",arg:"",label:"Delete my account",danger:1};render(true);},
   async dodelaccount(){if(!AUTH){A.dosignout();return;}
-    try{const r=await SB.rpc("delete_my_account");if(r.error)throw r.error;}
-    catch(e){S.sheet=null;toast(/admin/i.test(String(e&&e.message))?"Admin accounts can’t be deleted here.":"Couldn’t delete the account. Try again.");render(true);return;}
+    let done=false;
+    try{const r=await SB.functions.invoke("notify",{body:{kind:"delete",lang:LANG}});if(!r.error&&r.data&&r.data.ok===true)done=true;}catch(e){}
+    if(!done){try{const r=await SB.rpc("delete_my_account");if(r.error)throw r.error;done=true;}catch(e){
+      try{const g=await SB.auth.getUser();if(g.error||!(g.data&&g.data.user))done=true;}catch(e2){}
+      if(!done){S.sheet=null;toast(/admin/i.test(String(e&&e.message))?"Admin accounts can’t be deleted here.":"Couldn’t delete the account. Try again.");render(true);return;}}}
     S.session=null;try{await SB.auth.signOut();}catch(err){}authReset();render();toast("Your account has been deleted");},
   signout(){S.sheet={type:"confirm",title:"Sign out?",text:"You’ll need to sign in again on this phone. Your bookings stay saved.",act:"dosignout",arg:"",label:"Sign out",danger:1};render(true);},
   dosignout(){if(AUTH){authSignOut();return;}try{localStorage.removeItem("sqpc-account");}catch(err){}S.account=null;S.sheet=null;S.ob={step:"welcome",method:"",email:"",code:"",sent:"",first:"",last:"",dept:"",level:"Intermediate",phone:"",err:"",hideEmail:false};go();render();}
@@ -1706,7 +1709,7 @@ async function authCreate(){const o=S.ob;if(!S.session){o.err="Your session expi
   const meta={first:o.first.trim(),last:o.last.trim(),dept:o.dept.trim(),phone:o.phone.trim(),level:o.level,lang:LANG};
   try{const r=await SB.auth.updateUser({data:meta});if(r.error)throw r.error;}catch(e){o.err=authMsg(e);render(true);return;}
   saveAccount({method:"email",email:S.session.user.email,first:meta.first,last:meta.last,dept:meta.dept,phone:meta.phone,level:meta.level,at:S.today,uid:S.session.user.id});
-  applyAccount();S.tab="home";S.stack.home=[];go();render();toast("Welcome, "+meta.first);afterAuthScan();}
+  applyAccount();S.tab="home";S.stack.home=[];go();render();toast("Welcome, "+meta.first);notifyMail(null,"welcome",300);afterAuthScan();}
 function authReset(){try{localStorage.removeItem("sqpc-account");}catch(err){}
   (LIVE.unsubs||[]).forEach(f=>{try{f();}catch(err){}});LIVE.unsubs=[];LIVE.docs={};LIVE.uid=null;LIVE.db=null;LIVE.state="off";
   DB.regs=DB.regs.filter(r=>!r.live);S.account=null;S.isAdmin=false;S.admin.on=false;S.admin.authed=false;S.sheet=null;
