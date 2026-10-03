@@ -1380,7 +1380,7 @@ const APP_URL=location.href.split("#")[0];
 function b64u(str){return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
 function unb64u(str){str=str.replace(/-/g,"+").replace(/_/g,"/");while(str.length%4)str+="=";return decodeURIComponent(escape(atob(str)));}
 function passPayload(r){const e=ev(r.eventId)||{},u=user(r.userId)||{};return b64u(JSON.stringify({v:1,e:r.eventId,et:e.title||"",ed:e.date||"",f:u.first||"",l:u.last||"",g:r.guests.map(g=>[g.first,g.last,g.level]),p:r.payment,m:r.payMethod||"",t:r.total,tr:r.tier,q:r.equipment?1:0,n:r.lunch?1:0,c:r.createdAt,s:r.status}));}
-function passLink(r){return APP_URL+"#pass-"+r.code+"-"+r.id+"."+passPayload(r);}
+function passLink(r){return APP_URL+"#pass-"+r.code+"-"+r.id+((typeof AUTH!=="undefined"&&AUTH&&r.live)?"":"."+passPayload(r));}
 function parsePass(text){let t=String(text||"").trim();if(!t)return null;const hi=t.indexOf("#");if(hi>=0)t=t.slice(hi+1);
   if(/^pass-/i.test(t)){t=t.slice(5);let data=null;const dot=t.indexOf(".");if(dot>=0){try{data=JSON.parse(unb64u(t.slice(dot+1)));}catch(err){data=null;}t=t.slice(0,dot);}const m=t.match(/^(SQP-[A-Za-z0-9]{4})(?:-(.+))?$/i);return m?{code:m[1].toUpperCase(),id:m[2]||"",data}:{code:t.toUpperCase(),id:"",data};}
   const [c,id]=t.split("|");return {code:c.toUpperCase(),id:id||""};}
@@ -1605,17 +1605,26 @@ async function initStore(C){
   render(true);}
 /* live camera scanning: used directly on the hosted app */
 async function startCamDetect(){const v=document.getElementById("scVid");if(!v)return;
-  try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("none");
-    const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+  v.muted=true;v.defaultMuted=true;v.autoplay=true;v.playsInline=true;["muted","playsinline","webkit-playsinline","autoplay"].forEach(a=>v.setAttribute(a,""));
+  const fallback=msg=>{CAM.live=false;const sc=document.querySelector(".scanner");if(sc)sc.classList.add("photo");setScanMsg(msg);};
+  try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Object.assign(new Error("none"),{name:"NoApi"});
+    let st;try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});}
+    catch(e1){if(e1&&(e1.name==="NotAllowedError"||e1.name==="SecurityError"))throw e1;st=await navigator.mediaDevices.getUserMedia({video:true,audio:false});}
     if(!document.getElementById("scVid")){st.getTracks().forEach(t=>t.stop());return;}
-    CAM.stream=st;CAM.live=true;v.srcObject=st;await v.play().catch(()=>{});const sc=document.querySelector(".scanner");if(sc)sc.classList.add("live");setScanMsg("Point the camera at the QR code");
+    CAM.stream=st;v.srcObject=st;
+    const started=()=>{CAM.live=true;const sc=document.querySelector(".scanner");if(sc)sc.classList.add("live");setScanMsg("Point the camera at the QR code");};
+    try{await v.play();}catch(pe){setScanMsg("Tap the screen to start the camera");const kick=()=>{v.play().then(started).catch(()=>{});};const view=document.querySelector(".sc-view");if(view)view.addEventListener("click",kick,{once:true});}
+    if(!v.paused)started();
     let det=null;try{if("BarcodeDetector" in window){const f=await window.BarcodeDetector.getSupportedFormats();if(f.includes("qr_code"))det=new window.BarcodeDetector({formats:["qr_code"]});}}catch(err){det=null;}
-    const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});let busy=false;
-    CAM.timer=setInterval(async()=>{if(busy||!v.videoWidth)return;busy=true;try{
+    const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});let busy=false,n=0;
+    const readCrop=(frac)=>{const W=v.videoWidth,H=v.videoHeight,side=Math.min(W,H)*frac,sx=(W-side)/2,sy=(H-side)/2,k=Math.min(1,720/side);cv.width=Math.max(1,Math.round(side*k));cv.height=cv.width;cx.drawImage(v,sx,sy,side,side,0,0,cv.width,cv.height);const d=cx.getImageData(0,0,cv.width,cv.height);const r=window.jsQR(d.data,cv.width,cv.height,{inversionAttempts:"attemptBoth"});return r&&r.data?r.data:null;};
+    CAM.timer=setInterval(async()=>{if(busy||!v.videoWidth||v.paused)return;busy=true;try{
         if(det){const codes=await det.detect(v);if(codes&&codes[0]&&codes[0].rawValue){handleScan(codes[0].rawValue);return;}}
-        else if(window.jsQR){const side=Math.min(v.videoWidth,v.videoHeight)*0.8,sx=(v.videoWidth-side)/2,sy=(v.videoHeight-side)/2,k=Math.min(1,640/side);cv.width=Math.round(side*k);cv.height=cv.width;cx.drawImage(v,sx,sy,side,side,0,0,cv.width,cv.height);const d=cx.getImageData(0,0,cv.width,cv.height);const res=window.jsQR(d.data,cv.width,cv.height,{inversionAttempts:"dontInvert"});if(res&&res.data){handleScan(res.data);return;}}
-      }catch(err){}busy=false;},180);
-  }catch(err){CAM.live=false;const sc=document.querySelector(".scanner");if(sc)sc.classList.add("photo");setScanMsg(HOSTED?"Allow camera access in your browser, or tap the button to take a photo.":"Tap the button to open the camera and photograph the QR code.");}}
+        if(window.jsQR){n++;const t=readCrop(n%2?0.9:0.6)||(n%4===0?readCrop(1):null);if(t){handleScan(t);return;}}
+      }catch(err){}busy=false;},150);
+    setTimeout(()=>{if(document.getElementById("scVid")&&(!v.videoWidth||v.paused)){const sc=document.querySelector(".scanner");if(sc)sc.classList.add("photo");setScanMsg("The camera did not start. Tap the round button to take a photo of the QR code.");}},7000);
+  }catch(err){const nm=err&&err.name;
+    fallback(nm==="NotAllowedError"||nm==="SecurityError"?"Camera blocked. In Safari tap aA, then Website Settings, then Camera: Allow. Or tap the round button to take a photo.":nm==="NotFoundError"?"No camera found. Tap the round button to take a photo.":"Tap the round button to take a photo of the QR code.");}}
 /* ================= RENDER ================= */
 const app=document.getElementById("app");
 function currentRoute(){const st=S.stack[S.tab];return st.length?st[st.length-1]:{name:S.tab};}
