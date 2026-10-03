@@ -21,3 +21,9 @@ Sans cette fonction, tout marche quand même, simplement aucun e-mail n'est envo
 1. Supabase → *SQL Editor* → coller et lancer le bloc « 6. Suppression de compte » de `supabase-setup.sql` (une seule fois).
 2. Supabase → *Authentication* → *URL Configuration* → mettre **Site URL** = `https://pintouch44.github.io/sq-padel-club/` et ajouter la même adresse dans **Redirect URLs**.
 3. Supabase → *Authentication* → *SMTP Settings* (recommandé) : brancher Brevo pour que les mails « mot de passe oublié » partent de ton adresse et sans limite horaire serrée.
+
+## Communauté (v0.22)
+
+- Bouton « Inviter un ami » (WhatsApp) sur chaque événement et après l'inscription: rien à configurer.
+- Bouton « Rejoindre le groupe WhatsApp » sur l'accueil: coller le lien d'invitation du groupe dans Admin → Réglages → Communauté.
+- « Qui joue »: chaque joueur peut masquer son nom dans Profil.
