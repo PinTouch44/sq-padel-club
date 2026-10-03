@@ -839,7 +839,7 @@ const chev='<svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColo
 function courtSVG(stroke,op){return '<svg class="lines" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="'+stroke+'" stroke-opacity="'+(op||.35)+'" stroke-width="2"><rect x="40" y="20" width="320" height="160"/><path d="M200 10v180M88 20v160M312 20v160M88 100h224"/></g></svg>';}
 
 /* ---------- i18n scaffold (EN live, FR prepared) ---------- */
-const APP_VERSION="0.23";
+const APP_VERSION="0.24";
 const STR={en:{home:"Home",events:"Events",bookings:"Bookings",profile:"Profile"},fr:{home:"Accueil",events:"Événements",bookings:"Réservations",profile:"Profil"},de:{home:"Start",events:"Events",bookings:"Buchungen",profile:"Profil"}};
 let LANG=(()=>{try{const l=localStorage.getItem("sqpc-lang");if(l==="fr"||l==="de"||l==="en")return l;}catch(err){}const n=String((navigator.languages&&navigator.languages[0])||navigator.language||"en").slice(0,2).toLowerCase();return n==="fr"||n==="de"?n:"en";})();
 const t=k=>(STR[LANG]&&STR[LANG][k])||STR.en[k]||k;
@@ -1601,6 +1601,7 @@ function onboardingView(){const o=S.ob;
   if(AUTH&&o.step==="auth")return authForm();
   if(AUTH&&o.step==="forgot")return forgotForm();
   if(AUTH&&o.step==="newpass")return newPassForm();
+  if(AUTH&&o.step==="resetcode")return resetCodeForm();
   if(o.step==="welcome")return obShell('<div class="ob-hero"><img src="'+LOGO+'" alt="Swissquote Padel Club" class="ob-logo"><h1>Swissquote<br>Padel Club</h1><p>'+esc(DB.content.tagline)+'</p><div class="ob-stats"><span><b>13</b>events</span><span><b>12</b>months</span><span><b>1</b>community</span></div></div><div class="ob-card"><b class="ob-card-t">Create your account</b>'+["apple","google","microsoft","email"].map(k=>'<button class="ob-btn ob-'+k+'" data-act="obprov" data-arg="'+k+'"><span class="ob-ico">'+provIcon(k)+'</span><span>'+PROV[k].btn+'</span></button>').join("")+'<button class="ob-link" data-act="obprov" data-arg="email">Already a member? Sign in</button><p class="ob-fine">Test mode: sign-in is simulated, no password is created and nothing leaves this phone.</p></div>');
   if(o.step==="provider"){const k=o.method,nm=LIVE.viewerName||"";
     if(k==="apple")return obShell('<div class="ob-card ob-sheet"><div class="pv-head apple">'+provIcon("apple")+'<b>Sign in with Apple</b><span>to Swissquote Padel Club</span></div><div class="faceid"><span></span></div><div class="list form"><input class="finput" type="email" placeholder="Apple ID email" aria-label="Apple ID email" data-bind="ob.email" value="'+esc(o.email)+'"></div><div class="irow" style="background:var(--surface);border-radius:12px;margin-top:10px"><span class="iv"><b style="font-weight:400">Hide my email</b><small>Share a private relay address</small></span>'+toggle("ob.hideEmail",o.hideEmail,"Hide my email")+'</div>'+(o.err?'<div class="err-t mt12">'+o.err+'</div>':'')+'<button class="btn btn-dark btn-block mt16" data-act="obprovok">Continue with Face ID</button></div>',true);
@@ -1614,6 +1615,7 @@ const OBA={
   obforgot(){const o=S.ob;o.err="";o.info="";o.step="forgot";render(true);},
   obsendreset(){authSendReset();},
   obsetpass(){authSetPass();},
+  obverifyreset(){authVerifyReset();},
   obmode(){const o=S.ob;o.mode=o.mode==="in"?"up":"in";o.err="";render(true);},
   obprov(k){const o=S.ob;if(AUTH){o.method="email";o.mode=k==="signin"?"in":"up";o.err="";o.step="auth";render(true);return;}o.method=k;o.err="";o.step=k==="email"?"email":"provider";render(true);},
   obback(){const o=S.ob;o.err="";if(AUTH){o.step="welcome";render(true);return;}o.step=o.step==="code"?"email":o.step==="profile"?(o.method==="email"?"email":"provider"):"welcome";render(true);},
@@ -1649,15 +1651,26 @@ function authWelcome(){return obShell('<div class="ob-hero"><img src="'+LOGO+'" 
 function authForm(){const o=S.ob,inn=o.mode==="in";
   return obShell('<div class="ob-card ob-sheet"><h2 class="ob-h">'+(inn?"Sign in":"Create your account")+'</h2><p class="ob-p">'+(inn?"Use the email and password of your account.":"Choose a password of at least 8 characters.")+'</p><div class="list form"><input class="finput" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="Email" aria-label="Email" data-bind="ob.email" value="'+esc(o.email)+'"><input class="finput" type="password" autocomplete="'+(inn?"current-password":"new-password")+'" placeholder="Password" aria-label="Password" data-bind="ob.password" value="'+esc(o.password||"")+'"></div>'+(o.err?'<div class="err-t mt12">'+esc(o.err)+'</div>':'')+'<button class="btn btn-primary btn-block mt16" data-act="obauth"'+(o.busy?" disabled":"")+'>'+(o.busy?"Please wait…":inn?"Sign in":"Continue")+'</button>'+(inn?'<button class="ob-link dark" data-act="obforgot">Forgot password?</button>':'')+'<button class="ob-link dark" data-act="obmode">'+(inn?"New here? Create an account":"Already a member? Sign in")+'</button></div>',true);}
 function forgotForm(){const o=S.ob;
-  return obShell('<div class="ob-card ob-sheet"><h2 class="ob-h">Reset your password</h2><p class="ob-p">Enter your email and we’ll send you a link to choose a new password.</p><div class="list form"><input class="finput" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="Email" aria-label="Email" data-bind="ob.email" value="'+esc(o.email)+'"></div>'+(o.err?'<div class="err-t mt12">'+esc(o.err)+'</div>':'')+(o.info?'<div class="pbanner ok mt12">'+ic("check")+'<span>'+esc(o.info)+'</span></div>':'')+'<button class="btn btn-primary btn-block mt16" data-act="obsendreset"'+(o.busy?" disabled":"")+'>'+(o.busy?"Please wait…":"Send the link")+'</button></div>',true);}
+  return obShell('<div class="ob-card ob-sheet"><h2 class="ob-h">Reset your password</h2><p class="ob-p">Enter your email and we’ll send you a code to choose a new password.</p><div class="list form"><input class="finput" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="Email" aria-label="Email" data-bind="ob.email" value="'+esc(o.email)+'"></div>'+(o.err?'<div class="err-t mt12">'+esc(o.err)+'</div>':'')+(o.info?'<div class="pbanner ok mt12">'+ic("check")+'<span>'+esc(o.info)+'</span></div>':'')+'<button class="btn btn-primary btn-block mt16" data-act="obsendreset"'+(o.busy?" disabled":"")+'>'+(o.busy?"Please wait…":"Send the code")+'</button></div>',true);}
+function resetCodeForm(){const o=S.ob;
+  return obShell('<div class="ob-card ob-sheet"><h2 class="ob-h">Enter your code</h2><p class="ob-p">If an account exists for this email, a code is on its way. Enter it below and choose a new password.</p><div class="list form"><input class="finput" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Code from the email" aria-label="Code from the email" data-bind="ob.code" value="'+esc(o.code||"")+'"><input class="finput" type="password" autocomplete="new-password" placeholder="New password" aria-label="New password" data-bind="ob.password" value="'+esc(o.password||"")+'"><input class="finput" type="password" autocomplete="new-password" placeholder="Repeat the new password" aria-label="Repeat the new password" data-bind="ob.password2" value="'+esc(o.password2||"")+'"></div>'+(o.err?'<div class="err-t mt12">'+esc(o.err)+'</div>':'')+(o.info?'<div class="pbanner ok mt12">'+ic("check")+'<span>'+esc(o.info)+'</span></div>':'')+'<button class="btn btn-primary btn-block mt16" data-act="obverifyreset"'+(o.busy?" disabled":"")+'>'+(o.busy?"Please wait…":"Save password")+'</button><button class="ob-link dark" data-act="obsendreset">Send a new code</button></div>',true);}
 function newPassForm(){const o=S.ob;
   return obShell('<div class="ob-card ob-sheet"><h2 class="ob-h">Choose a new password</h2><p class="ob-p">At least 8 characters.</p><div class="list form"><input class="finput" type="password" autocomplete="new-password" placeholder="New password" aria-label="New password" data-bind="ob.password" value="'+esc(o.password||"")+'"><input class="finput" type="password" autocomplete="new-password" placeholder="Repeat the new password" aria-label="Repeat the new password" data-bind="ob.password2" value="'+esc(o.password2||"")+'"></div>'+(o.err?'<div class="err-t mt12">'+esc(o.err)+'</div>':'')+'<button class="btn btn-primary btn-block mt16" data-act="obsetpass"'+(o.busy?" disabled":"")+'>'+(o.busy?"Please wait…":"Save password")+'</button></div>',false);}
 async function authSendReset(){const o=S.ob;if(o.busy)return;const em=(o.email||"").trim().toLowerCase();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){o.err="Enter a valid email address.";o.info="";render(true);return;}
   o.err="";o.info="";o.busy=true;render(true);
-  try{const r=await SB.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});if(r&&r.error)throw r.error;o.info="If an account exists for this email, a reset link is on its way. Check your inbox and spam folder.";}
+  try{const r=await SB.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});if(r&&r.error)throw r.error;o.info="A new code has been sent. Check your inbox and spam folder.";o.step="resetcode";o.code="";}
   catch(e){o.err=authMsg(e);}
   o.busy=false;render(true);}
+async function authVerifyReset(){const o=S.ob;if(o.busy)return;const em=(o.email||"").trim().toLowerCase();const code=String(o.code||"").replace(/\s+/g,"");
+  if(!/^\d{6,10}$/.test(code)){o.err="Enter the code from the email.";o.info="";render(true);return;}
+  if((o.password||"").length<8){o.err="Your password needs at least 8 characters.";o.info="";render(true);return;}
+  if(o.password!==o.password2){o.err="Passwords don’t match.";o.info="";render(true);return;}
+  o.err="";o.info="";o.busy=true;render(true);
+  try{const r=await SB.auth.verifyOtp({email:em,token:code,type:"recovery"});if(r.error)throw r.error;
+    const sess=r.data&&r.data.session;if(!sess)throw new Error("no session");S.session=sess;LIVE.uid=sess.user.id;S.recovery=true;}
+  catch(e){o.busy=false;o.err="That code is wrong or has expired.";render(true);return;}
+  o.busy=false;await authSetPass();}
 async function authSetPass(){const o=S.ob;if(o.busy)return;
   if((o.password||"").length<8){o.err="Your password needs at least 8 characters.";render(true);return;}
   if(o.password!==o.password2){o.err="Passwords don’t match.";render(true);return;}
