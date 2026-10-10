@@ -5,6 +5,7 @@ Application web (joueurs + console admin) du Swissquote Padel Club.
 - `index.html` : l'app
 - `config.js` : adresse et clé publique Supabase (synchronisation en direct)
 - `supabase-setup.sql` : création des tables (à exécuter une fois dans Supabase)
+- `supabase-sports.sql` : administrateurs par sport (v0.25, à exécuter une fois après `supabase-setup.sql`, sans risque de le relancer)
 
 ## E-mails de confirmation (v0.20)
 

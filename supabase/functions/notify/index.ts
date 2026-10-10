@@ -15,8 +15,8 @@ const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&
 
 const T: Record<string, Record<string, string>> = {
   fr: {
-    hi: "Salut", open: "Ouvrir l’app", team: "L’équipe du Swissquote Padel Club",
-    wSub: "Bienvenue au Swissquote Padel Club", wTitle: "Bienvenue !", wBody: "Ton compte est créé. Tu peux maintenant réserver ta place pour les prochains événements, inviter des amis et suivre tes inscriptions.",
+    hi: "Salut", open: "Ouvrir l’app", team: "L’équipe du Swissquote Sports",
+    wSub: "Bienvenue au Swissquote Sports", wTitle: "Bienvenue !", wBody: "Ton compte est créé. Tu peux maintenant réserver ta place pour les prochains événements, inviter des amis et suivre tes inscriptions.",
     rSub: "Inscription reçue, en attente de paiement", rTitle: "Inscription reçue", rState: "Ta place est réservée, mais elle n’est <b>pas encore confirmée</b> : elle le sera dès que ton paiement sera validé.",
     rFor: "Événement", rAmount: "Montant à payer",
     rVenue: "Tu as choisi de payer sur place : règle le montant à l’hôte le jour J.",
@@ -26,8 +26,8 @@ const T: Record<string, Record<string, string>> = {
     dSub: "Ton compte a été supprimé", dTitle: "Compte supprimé", dBody: "Ton compte et toutes tes données (profil et réservations) ont été effacés définitivement. Si tu n’es pas à l’origine de cette suppression, réponds à ce message.",
   },
   de: {
-    hi: "Hallo", open: "App öffnen", team: "Das Team des Swissquote Padel Club",
-    wSub: "Willkommen im Swissquote Padel Club", wTitle: "Willkommen!", wBody: "Dein Konto ist erstellt. Du kannst dich jetzt für die nächsten Events anmelden, Freunde einladen und deine Anmeldungen verfolgen.",
+    hi: "Hallo", open: "App öffnen", team: "Das Team des Swissquote Sports",
+    wSub: "Willkommen im Swissquote Sports", wTitle: "Willkommen!", wBody: "Dein Konto ist erstellt. Du kannst dich jetzt für die nächsten Events anmelden, Freunde einladen und deine Anmeldungen verfolgen.",
     rSub: "Anmeldung erhalten, Zahlung ausstehend", rTitle: "Anmeldung erhalten", rState: "Dein Platz ist reserviert, aber <b>noch nicht bestätigt</b>: Er wird bestätigt, sobald deine Zahlung geprüft ist.",
     rFor: "Event", rAmount: "Zu zahlender Betrag",
     rVenue: "Du zahlst vor Ort: bezahle den Betrag am Eventtag beim Gastgeber.",
@@ -37,8 +37,8 @@ const T: Record<string, Record<string, string>> = {
     dSub: "Dein Konto wurde gelöscht", dTitle: "Konto gelöscht", dBody: "Dein Konto und alle deine Daten (Profil und Buchungen) wurden endgültig gelöscht. Falls du das nicht warst, antworte auf diese Nachricht.",
   },
   en: {
-    hi: "Hi", open: "Open the app", team: "The Swissquote Padel Club team",
-    wSub: "Welcome to the Swissquote Padel Club", wTitle: "Welcome!", wBody: "Your account is ready. You can now book your spot at the next events, invite friends and follow your registrations.",
+    hi: "Hi", open: "Open the app", team: "The Swissquote Sports team",
+    wSub: "Welcome to the Swissquote Sports", wTitle: "Welcome!", wBody: "Your account is ready. You can now book your spot at the next events, invite friends and follow your registrations.",
     rSub: "Registration received, payment pending", rTitle: "Registration received", rState: "Your spot is reserved but <b>not confirmed yet</b>: it will be confirmed as soon as your payment is validated.",
     rFor: "Event", rAmount: "Amount to pay",
     rVenue: "You chose to pay on site: give the amount to the host on the day.",
@@ -54,7 +54,7 @@ function layout(title: string, inner: string, t: Record<string, string>, url?: s
     ? `<p style="margin:24px 0 0"><a href="${esc(url)}" style="background:${ACCENT};color:#fff;text-decoration:none;font-weight:600;padding:13px 22px;border-radius:12px;display:inline-block">${t.open}</a></p>`
     : "";
   return `<!doctype html><html><body style="margin:0;background:#F3F1EE"><div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1b1b1b">
-<div style="text-align:center;padding:8px 0 18px"><img src="${LOGO}" width="64" height="64" alt="Swissquote Padel Club" style="border-radius:16px"></div>
+<div style="text-align:center;padding:8px 0 18px"><img src="${LOGO}" width="64" height="64" alt="Swissquote Sports" style="border-radius:16px"></div>
 <div style="background:#fff;border-radius:18px;padding:28px 24px;font-size:16px;line-height:1.55">
 <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25">${title}</h1>${inner}${btn}</div>
 <p style="text-align:center;color:#8a8a8a;font-size:13px;margin:16px 0 0">${t.team}</p></div></body></html>`;
@@ -64,7 +64,7 @@ async function sendMail(to: string, subject: string, html: string) {
   const r = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: { "api-key": Deno.env.get("BREVO_API_KEY") || "", "content-type": "application/json" },
-    body: JSON.stringify({ sender: { name: "Swissquote Padel Club", email: Deno.env.get("MAIL_FROM") }, to: [{ email: to }], subject, htmlContent: html }),
+    body: JSON.stringify({ sender: { name: "Swissquote Sports", email: Deno.env.get("MAIL_FROM") }, to: [{ email: to }], subject, htmlContent: html }),
   });
   if (!r.ok) throw new Error("mail provider: " + (await r.text()));
 }
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     if (kind === "registered") {
       if (caller.id !== b.uid) return json({ error: "forbidden" }, 403);
     } else if (kind === "paid") {
-      if (!(await isAdmin()) || b.payment !== "paid") return json({ error: "forbidden" }, 403);
+      if (!((await asUser.rpc("is_admin_for", { sp: b.sport || "padel" })).data === true) || b.payment !== "paid") return json({ error: "forbidden" }, 403);
     } else return json({ error: "bad kind" }, 400);
 
     const { data: club } = await admin.from("club").select("data").eq("id", "state").maybeSingle();
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     const to = owner?.user?.email;
     if (!to) return json({ error: "no email" }, 404);
 
-    const title = ev.title || "Swissquote Padel Club";
+    const title = ev.title || "Swissquote Sports";
     const when = [ev.date, ev.start].filter(Boolean).join(" · ");
     const ref = `${title} · ${ev.date || ""} · ${b.first || ""} ${b.last || ""}`.trim();
     const eventBox = `<div style="background:#F6F4F1;border-radius:12px;padding:14px 16px;margin:14px 0"><b>${esc(title)}</b><br><span style="color:#666">${esc(when)}${ev.venue ? " · " + esc(ev.venue) : ""}</span></div>`;
