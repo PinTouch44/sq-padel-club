@@ -741,6 +741,22 @@ button.avatar{cursor:pointer}
 
 /* v8: onboarding */
 /* v0.25b: light onboarding */
+.sph{position:relative;display:block;aspect-ratio:1;border-radius:22px;overflow:hidden;background-color:var(--sc);background-size:cover;background-position:center;color:#fff;font:inherit}
+.sph.nop{display:grid;place-items:center}.sph.nop svg{width:40%;height:40%}
+.sph::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.62) 0,rgba(0,0,0,0) 48%);pointer-events:none}
+.sph .spn{position:absolute;left:10px;right:10px;bottom:8px;z-index:1;font-size:14px;font-weight:700;letter-spacing:-.01em;text-align:left;line-height:1.15;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+.sph .tk{position:absolute;z-index:2;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:#fff;color:var(--sc);display:none;place-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.sph .tk svg{width:14px;height:14px}
+.sgb2{border:0;padding:0;cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 0 0 1px var(--line)}
+.sgb2:not(.on) .spn{opacity:.95}
+.sgb2.on{box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--sc)}
+.sgb2.on .tk{display:grid}.sgb2:active{transform:scale(.97)}
+.sgb2:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.sgrid{gap:12px}.sgrid .sph{aspect-ratio:4/5}
+.wl-mosaic .sph{border-radius:20px;animation:pop .5s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--i)*45ms);box-shadow:0 8px 20px rgba(0,0,0,.10)}
+.wl-mosaic .sph .spn{font-size:13px;left:9px;bottom:7px}
+.wl-mosaic>*:nth-child(3n+2){transform:none}
+
 .logo,.logo-sm,.lt-logo,.tb-logo,.ob-logo,.lg,.wl-logo{display:inline-block;overflow:hidden;border-radius:50%;flex:none}
 .logo svg,.logo-sm svg,.lt-logo svg,.tb-logo svg,.ob-logo svg,.lg svg,.wl-logo svg{width:100%;height:100%;display:block}
 .lg{width:38px;height:38px;background:#fff}
@@ -935,7 +951,7 @@ const chev='<svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColo
 function courtSVG(stroke,op){return '<svg class="lines" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="'+stroke+'" stroke-opacity="'+(op||.35)+'" stroke-width="2"><rect x="40" y="20" width="320" height="160"/><path d="M200 10v180M88 20v160M312 20v160M88 100h224"/></g></svg>';}
 
 /* ---------- i18n scaffold (EN live, FR prepared) ---------- */
-const APP_VERSION="0.26";
+const APP_VERSION="0.27";
 const STR={en:{home:"Home",events:"Events",bookings:"Bookings",profile:"Profile"},fr:{home:"Accueil",events:"Événements",bookings:"Réservations",profile:"Profil"},de:{home:"Start",events:"Events",bookings:"Buchungen",profile:"Profil"}};
 let LANG=(()=>{try{const l=localStorage.getItem("sqpc-lang");if(l==="fr"||l==="de"||l==="en")return l;}catch(err){}const n=String((navigator.languages&&navigator.languages[0])||navigator.language||"en").slice(0,2).toLowerCase();return n==="fr"||n==="de"?n:"en";})();
 const t=k=>(STR[LANG]&&STR[LANG][k])||STR.en[k]||k;
@@ -1258,7 +1274,9 @@ function plEvents(f){f=f||S.sportF||"mine";const mine=mySports();return visibleE
 function sportStrip(){const my=mySports().map(id=>sportOf(id)).filter(Boolean);return '<div class="sportstrip">'+my.map(x=>'<button class="spb'+(S.sportF===x.id?" on":"")+'" style="--sc:'+esc(x.color)+'" data-act="sportf" data-arg="'+x.id+'">'+sportTile(x,52)+'<span>'+esc(x.name)+'</span></button>').join("")+'<button class="spb" data-act="mysports"><span class="sptile add" style="width:52px;height:52px;border-radius:16px">'+ic("plus")+'</span><span>My sports</span></button></div>';}
 function sportChips(){const my=mySports(),act=activeSports();let cur=S.sportF||"mine";if(cur==="mine"&&my.length===1)cur=my[0];const items=[];if(my.length>1)items.push(["mine","My sports"]);my.forEach(id=>items.push([id,sportOf(id).name]));if(act.length>my.length)items.push(["all","All sports"]);
   return '<div class="chips" style="margin-top:12px">'+items.map(([k,l])=>'<button class="chip '+(cur===k?"on":"")+'" data-act="sportf2" data-arg="'+k+'">'+esc(l)+'</button>').join("")+'<button class="chip" data-act="mysports" aria-label="Edit my sports">'+ic("plus",'style="width:16px;height:16px"')+'</button></div>';}
-function sportPicker(sel,act){return '<div class="sgrid">'+activeSports().map(x=>{const on=sel.includes(x.id);return '<button class="sgb'+(on?" on":"")+'" style="--sc:'+esc(x.color)+'" data-act="'+act+'" data-arg="'+x.id+'" aria-pressed="'+(on?"true":"false")+'">'+sportTile(x,48)+'<span>'+esc(x.name)+'</span><i class="tk">'+ic("check")+'</i></button>';}).join("")+'</div>';}
+const SPORT_PHOTOS=["padel","tennis","golf","pingpong","moto","pilates","fitness","running","yoga"];
+function sportPhoto(x,tag,extra){const has=SPORT_PHOTOS.includes(x.id);return '<'+(tag||"span")+' class="sph'+(has?"":" nop")+'" style="--sc:'+esc(x.color)+(has?';background-image:url(photos/'+x.id+'.jpg)':'')+'"'+(extra||"")+'>'+(has?"":ic("sp-"+(I["sp-"+x.icon]?x.icon:"generic")))+'<b class="spn">'+esc(x.name)+'</b>'+(tag==="button"?'<i class="tk">'+ic("check")+'</i>':'')+'</'+(tag||"span")+'>';}
+function sportPicker(sel,act){return '<div class="sgrid">'+activeSports().map(x=>{const on=sel.includes(x.id);return sportPhoto(x,"button",' data-act="'+act+'" data-arg="'+x.id+'" aria-pressed="'+(on?"true":"false")+'"').replace('class="sph','class="sph sgb2'+(on?" on":"")+' ')}).join("")+'</div>';}
 function sportsStep(){const o=S.ob;o.sports=o.sports||[];const n=o.sports.length;
   return obShell('<div class="sp-head"><h2 class="ob-h">What do you want to play?</h2><p class="ob-p">Pick one or more sports. You can change this at any time.</p></div>'+sportPicker(o.sports,"obsport")+(o.err?'<div class="err-t mt12">'+esc(o.err)+'</div>':'')+'<div class="ob-foot"><button class="btn btn-primary btn-block" data-act="obsportsgo">Continue'+(n?'<span class="cnt num">'+n+'</span>':'')+'</button></div>',true);}
 function mySportsSheet(s){return sheetHead("My sports","Choose the sports you want to follow")+sportPicker(s.sel,"msport")+'<button class="btn btn-primary btn-block mt16" data-act="savesports">Save</button>';}
@@ -1783,7 +1801,7 @@ function provIcon(k){if(k==="apple")return '<svg viewBox="0 0 24 24" aria-hidden
   return ic("msg");}
 const OBSTEP={sports:1,provider:2,email:2,code:2,auth:2,forgot:2,resetcode:2,newpass:2,providers:2,profile:3};
 function obShell(inner,back,bare){const n=OBSTEP[S.ob.step]||0;return '<div class="ob lt"><div class="ob-top">'+(back?'<button class="ob-back" data-act="obback" aria-label="Back">'+ic("back")+'</button>':'<span style="width:0"></span>')+(n?'<div class="ob-prog" role="img" aria-label="Step '+n+' of 3">'+[1,2,3].map(k=>'<i class="'+(k<=n?"on":"")+'"></i>').join("")+'</div>':'<span></span>')+'<div style="display:flex;gap:8px;align-items:center">'+langChips()+(AUTH?'':'<span class="ob-test">Test mode</span>')+'</div></div>'+inner+'</div>';}
-function welcomeView(){return obShell('<div class="wl">'+logoEl("wl-logo")+'<div style="height:20px"></div><div class="wl-mosaic" aria-hidden="true">'+activeSports().slice(0,9).map((x,i)=>logoEl("wl-b",x.id,x.name).replace('class="wl-b"','class="wl-b" style="--i:'+i+'"')).join("")+'</div><h1>All Swissquote sports, in one app.</h1><p>Book your place, bring a +1, pay and check in with your pass.</p></div><div class="wl-cta"><button class="btn btn-primary btn-block" data-act="obstart">Get started</button><button class="ob-link dark" data-act="obprov" data-arg="signin">I already have an account</button>'+(AUTH?'':'<p class="ob-fine">Test mode: nothing leaves this phone.</p>')+'</div>');}
+function welcomeView(){return obShell('<div class="wl">'+logoEl("wl-logo")+'<div style="height:20px"></div><div class="wl-mosaic" aria-hidden="true">'+activeSports().slice(0,9).map((x,i)=>sportPhoto(x,"span",' data-i="'+i+'"').replace('style="','style="--i:'+i+';')).join("")+'</div><h1>All Swissquote sports, in one app.</h1><p>Book your place, bring a +1, pay and check in with your pass.</p></div><div class="wl-cta"><button class="btn btn-primary btn-block" data-act="obstart">Get started</button><button class="ob-link dark" data-act="obprov" data-arg="signin">I already have an account</button>'+(AUTH?'':'<p class="ob-fine">Test mode: nothing leaves this phone.</p>')+'</div>');}
 function providersView(){const o=S.ob;return obShell('<div class="ob-card ob-sheet"><h2 class="ob-h">Create your account</h2><p class="ob-p">Your sports</p><div class="my-sp">'+(o.sports||[]).map(id=>sportTile(sportOf(id),36)).join("")+'</div>'+["apple","google","microsoft","email"].map(k=>'<button class="ob-btn ob-'+k+'" data-act="obprov2" data-arg="'+k+'"><span class="ob-ico">'+provIcon(k)+'</span><span>'+PROV[k].btn+'</span></button>').join("")+'<p class="ob-fine">Test mode: sign-in is simulated, no password is created and nothing leaves this phone.</p></div>',true);}
 function onboardingView(){const o=S.ob;
   if(o.step==="welcome")return welcomeView();
