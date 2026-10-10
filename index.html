@@ -985,7 +985,7 @@ const chev='<svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColo
 function courtSVG(stroke,op){return '<svg class="lines" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="'+stroke+'" stroke-opacity="'+(op||.35)+'" stroke-width="2"><rect x="40" y="20" width="320" height="160"/><path d="M200 10v180M88 20v160M312 20v160M88 100h224"/></g></svg>';}
 
 /* ---------- i18n scaffold (EN live, FR prepared) ---------- */
-const APP_VERSION="0.31";
+const APP_VERSION="0.32";
 const STR={en:{home:"Home",events:"Events",bookings:"Bookings",profile:"Profile"},fr:{home:"Accueil",events:"Événements",bookings:"Réservations",profile:"Profil"},de:{home:"Start",events:"Events",bookings:"Buchungen",profile:"Profil"}};
 let LANG=(()=>{try{const l=localStorage.getItem("sqpc-lang");if(l==="fr"||l==="de"||l==="en")return l;}catch(err){}const n=String((navigator.languages&&navigator.languages[0])||navigator.language||"en").slice(0,2).toLowerCase();return n==="fr"||n==="de"?n:"en";})();
 const t=k=>(STR[LANG]&&STR[LANG][k])||STR.en[k]||k;
@@ -1762,7 +1762,7 @@ function aSettings(){const A=DB.assumptions;
   return h;}
 function budgetMini(){const b=DB.budget,n=budgetNums();return '<div class="panel mt16"><div class="row between wrap"><h3 style="margin:0">Budget</h3><button class="link small" data-act="apage" data-arg="budget">Open budget</button></div><div class="row between mt12 wrap"><span class="num" style="font-size:22px;font-weight:800">'+chf(n.spent+n.committed)+' <span class="muted" style="font-size:14px;font-weight:500">used of '+chf(b.approved)+'</span></span><span class="small muted">Forecast '+chf(n.fc)+'</span></div><div class="mt12">'+budgetBar(n,b)+'</div></div>';}
 /* ---------- v4: live sync, payments, calendars, directions, scanner ---------- */
-const LIVE={state:(!HOSTED||(CFG.supabaseUrl&&CFG.supabaseAnonKey))?"pending":"off",db:null,uid:null,isOwner:true,docs:{},dl:null};
+const LIVE={state:(!HOSTED||(CFG.supabaseUrl&&CFG.supabaseAnonKey))?"pending":"off",db:null,uid:null,isOwner:true,docs:{},seats:{},dl:null};
 async function initLive(){
   const C=window.claude;if(!C||!C.use){await initStore(null);return;}
   try{const u=await C.use("user");if(u){const m=await u.me();LIVE.uid=m.id;LIVE.viewerName=m.name||"";LIVE.viewerEmail=m.email||"";if(!S.ob.first&&m.name){const pp=m.name.trim().split(/\s+/);S.ob.first=pp[0]||"";S.ob.last=pp.slice(1).join(" ");}LIVE.isOwner=!!m.isOwner;
@@ -1772,14 +1772,18 @@ async function initLive(){
 function mergeLive(){DB.regs=DB.regs.filter(r=>!r.live);
   Object.entries(LIVE.docs).forEach(([id,d])=>{if(!ev(d.eventId))return;let userId;
     if(d.uid&&(d.uid===LIVE.uid||(S.account&&d.uid===S.account.uid)))userId=S.me;else{userId="lu-"+(d.uid||id);let u=user(userId);if(!u){u={id:userId,first:"",last:"",email:"",phone:"",dept:"Live booking",level:d.level||"—"};DB.users.push(u);}u.first=String(d.first||"Player");u.last=String(d.last||"");if(d.level)u.level=String(d.level);u.phone=String(d.phone||"");}
-    DB.regs.push({id,live:true,eventId:d.eventId,userId,guests:Array.isArray(d.guests)?d.guests:[],tier:d.tier,emp:+d.emp||0,guestPrice:+d.guestPrice||0,total:+d.total||0,status:d.status||"confirmed",payment:d.payment||"unpaid",payMethod:d.payMethod||"",createdAt:d.createdAt||S.today,lunch:!!d.lunch,lunchPrice:+d.lunchPrice||0,diet:d.diet||"",equipment:!!d.equipment,code:d.code,checkedIn:!!d.checkedIn,checkedAt:d.checkedAt||"",feedback:null,show:d.show!==false});});}
+    DB.regs.push({id,live:true,eventId:d.eventId,userId,guests:Array.isArray(d.guests)?d.guests:[],tier:d.tier,emp:+d.emp||0,guestPrice:+d.guestPrice||0,total:+d.total||0,status:d.status||"confirmed",payment:d.payment||"unpaid",payMethod:d.payMethod||"",createdAt:d.createdAt||S.today,lunch:!!d.lunch,lunchPrice:+d.lunchPrice||0,diet:d.diet||"",equipment:!!d.equipment,code:d.code,checkedIn:!!d.checkedIn,checkedAt:d.checkedAt||"",feedback:null,show:d.show!==false});});
+  Object.entries(LIVE.seats||{}).forEach(([id,d])=>{if(LIVE.docs[id]||!d||!ev(d.eventId))return;if(d.uid&&(d.uid===LIVE.uid||(S.account&&d.uid===S.account.uid)))return;const userId="lu-"+(d.uid||id);let u=user(userId);if(!u){u={id:userId,first:"",last:"",email:"",phone:"",dept:"Live booking",level:"—"};DB.users.push(u);}u.first=String(d.first||"Player");u.last=String(d.last||"");
+    DB.regs.push({id,live:true,seat:true,eventId:d.eventId,userId,guests:Array.from({length:Math.max(0,+d.guests||0)},()=>({first:"Guest",last:"",phone:"",level:"—",lunch:false})),tier:"",emp:0,guestPrice:0,total:0,status:d.status||"confirmed",payment:"unpaid",payMethod:"",createdAt:S.today,lunch:false,lunchPrice:0,diet:"",equipment:false,code:"",checkedIn:false,checkedAt:"",feedback:null,show:d.show!==false});});}
+function seatDoc(r,e,u){return {eventId:r.eventId,sport:evSportId(e),uid:LIVE.uid||(S.account&&S.account.uid)||"",first:u.first,last:String(u.last||"").slice(0,1),guests:(r.guests||[]).length,status:r.status,show:r.show!==false};}
+function seatSync(r){try{const e=ev(r.eventId),u=user(r.userId)||{};if(!e||!LIVE.db||LIVE.noSeats)return;LIVE.db.doc("seats/"+r.id).set(seatDoc(r,e,u)).catch(()=>{});}catch(err){}}
 function notifyMail(id,kind,delay){try{if(!AUTH||!SB)return;setTimeout(()=>{try{SB.functions.invoke("notify",{body:{id,kind,lang:LANG,url:location.origin+location.pathname}}).catch(()=>{});}catch(err){}},delay||0);}catch(err){}}
-function persist(r){if(!r||!r.live||!LIVE.db)return;LIVE.db.doc("bookings/"+r.id).update({status:r.status,payment:r.payment,payMethod:r.payMethod||"",checkedIn:!!r.checkedIn,checkedAt:r.checkedAt||"",show:r.show!==false}).catch(()=>toast("Couldn’t sync this change"));}
+function persist(r){if(!r||!r.live||!LIVE.db)return;if(!r.seat)seatSync(r);LIVE.db.doc("bookings/"+r.id).update({status:r.status,payment:r.payment,payMethod:r.payMethod||"",checkedIn:!!r.checkedIn,checkedAt:r.checkedAt||"",show:r.show!==false}).catch(()=>toast("Couldn’t sync this change"));}
 function makeBooking(s,payment,method){const e=ev(s.evId);const ti=tierAt(e);const u=me();
   const r={id:uid("r"),eventId:e.id,userId:S.me,guests:clone(s.guests),tier:ti.label,emp:ti.emp,guestPrice:ti.guest,total:bookTotal(e,s),lunchPrice:(lunchOffer(e)!==null&&lunchN(s)>0)?lunchOffer(e):0,status:"confirmed",payment,payMethod:method||"",createdAt:S.today,lunch:!!s.lunch,diet:s.diet||"",equipment:!!s.equipment,code:code(),checkedIn:false,feedback:null,show:S.prefs.showName!==false};
   u.first=s.first||u.first;u.last=s.last||u.last;u.phone=s.phone||u.phone;
   if(LIVE.db){r.live=true;const doc={eventId:r.eventId,sport:evSportId(e),uid:LIVE.uid||(S.account&&S.account.uid)||"",first:u.first,last:u.last,phone:u.phone||"",level:u.level||"",guests:r.guests,tier:r.tier,emp:r.emp,guestPrice:r.guestPrice,lunchPrice:r.lunchPrice||0,total:r.total,status:r.status,payment:r.payment,payMethod:r.payMethod,createdAt:r.createdAt,lunch:r.lunch,diet:r.diet,equipment:r.equipment,code:r.code,checkedIn:false,checkedAt:"",show:r.show};
-    LIVE.db.doc("bookings/"+r.id).set(doc).catch(()=>{r.live=false;toast("Saved on this phone only: sharing is off");render(true);});}
+    LIVE.db.doc("bookings/"+r.id).set(doc).catch(()=>{r.live=false;toast("Saved on this phone only: sharing is off");render(true);});seatSync(r);}
   DB.regs.push(r);return r;}
 
 /* ---------- v15: manual payment modes (venue / TWINT to organiser / bank transfer) ---------- */
@@ -2157,7 +2161,7 @@ async function authCreate(){const o=S.ob;if(!S.session){o.err="Your session expi
   saveAccount({method:"email",email:S.session.user.email,first:meta.first,last:meta.last,dept:meta.dept,phone:meta.phone,level:meta.level,sports:meta.sports,at:S.today,uid:S.session.user.id});
   applyAccount();S.tab="home";S.stack.home=[];go();render();toast("Welcome, "+meta.first);notifyMail(null,"welcome",300);afterAuthScan();}
 function authReset(){try{localStorage.removeItem("sqpc-account");}catch(err){}
-  (LIVE.unsubs||[]).forEach(f=>{try{f();}catch(err){}});LIVE.unsubs=[];LIVE.docs={};LIVE.uid=null;LIVE.db=null;LIVE.state="off";
+  (LIVE.unsubs||[]).forEach(f=>{try{f();}catch(err){}});LIVE.unsubs=[];LIVE.docs={};LIVE.seats={};LIVE.uid=null;LIVE.db=null;LIVE.state="off";
   DB.regs=DB.regs.filter(r=>!r.live);S.account=null;S.isAdmin=false;S.adminScope=[];S.admin.on=false;S.admin.authed=false;S.sheet=null;
   S.ob={step:"welcome",method:"",email:"",code:"",sent:"",first:"",last:"",dept:"",level:"Intermediate",phone:"",err:"",hideEmail:false,password:"",mode:"up",busy:false};go();}
 async function authSignOut(){const old=S.session;S.session=null;try{await SB.auth.signOut();}catch(err){}authReset();render();}
@@ -2204,11 +2208,12 @@ function setDemo(on,wasOn){if(wasOn===undefined)wasOn=!!DB._demoOn;DB.settings.d
 async function initStore(C){
   try{
     if(C){LIVE.state="pending";const db=await C.use("db");if(!db){LIVE.state="off";render(true);tryPending(true);return;}LIVE.db=db;LIVE.kind="claude";}
-    else if(AUTH){LIVE.state="pending";(LIVE.unsubs||[]).forEach(f=>{try{f();}catch(err){}});LIVE.unsubs=[];LIVE.docs={};LIVE.db=supaShim(SB);LIVE.kind="supabase";}
+    else if(AUTH){LIVE.state="pending";(LIVE.unsubs||[]).forEach(f=>{try{f();}catch(err){}});LIVE.unsubs=[];LIVE.docs={};LIVE.seats={};LIVE.noSeats=false;LIVE.db=supaShim(SB);LIVE.kind="supabase";}
     else{LIVE.state="off";render(true);tryPending(true);return;}
     try{const u1=LIVE.db.doc("club/state").onSnapshot(snap=>{const d=snap.exists?snap.data():null;if(d){const j=JSON.stringify(d);if(j!==lastClubJSON){applyClub(d);mergeLive();render(true);}}},()=>{});}catch(err){}
     const u2=LIVE.db.collection("bookings").onSnapshot(snap=>{LIVE.docs={};snap.docs.forEach(d=>{const v=d.data();if(v)LIVE.docs[d.id]=v;});LIVE.state="on";mergeLive();render(true);tryPending(true);},()=>{LIVE.state="error";render(true);tryPending(true);});
-    LIVE.unsubs=(LIVE.unsubs||[]).concat([u1,u2].filter(f=>typeof f==="function"));
+    let u3=null;try{u3=LIVE.db.collection("seats").onSnapshot(snap=>{LIVE.seats={};snap.docs.forEach(d=>{const v=d.data();if(v)LIVE.seats[d.id]=v;});mergeLive();render(true);},()=>{LIVE.noSeats=true;});}catch(err){LIVE.noSeats=true;}
+    LIVE.unsubs=(LIVE.unsubs||[]).concat([u1,u2,u3].filter(f=>typeof f==="function"));
   }catch(err){LIVE.state="off";tryPending(true);}
   render(true);}
 /* live camera scanning: used directly on the hosted app */
@@ -2317,7 +2322,7 @@ const A={
   ics(id){const e=ev(id);if(!LIVE.dl){toast("Calendar file not available here");return;}LIVE.dl.save({filename:"swissquote-padel-"+e.date+".ics",data:icsFor(e)}).then(()=>toast("Calendar file ready"),()=>{});},
   scanpaid(id){const r=DB.regs.find(x=>x.id===id);r.payment="paid";r.payMethod=r.payMethod||"Paid at the venue";persist(r);notifyMail(r.id,"paid");audit("Marked payment as paid",ev(r.eventId).title+" · "+user(r.userId).first);toast("Marked as paid");render(true);},
   scancheckin(id){const r=DB.regs.find(x=>x.id===id);r.checkedIn=true;r.checkedAt=new Date().toTimeString().slice(0,5);persist(r);audit("Checked in",ev(r.eventId).title+" · "+user(r.userId).first);toast(user(r.userId).first+" checked in");render(true);},
-  clearlive(){if(!LIVE.db){toast("Live sync is off on this device");return;}const ids=Object.keys(LIVE.docs);Promise.all(ids.map(id=>LIVE.db.doc("bookings/"+id).delete())).then(()=>toast(ids.length+" live booking"+(ids.length===1?"":"s")+" deleted"),()=>toast("Only organisers with edit rights can delete these"));},
+  clearlive(){if(!LIVE.db){toast("Live sync is off on this device");return;}const ids=Object.keys(LIVE.docs);Promise.all(ids.map(id=>LIVE.db.doc("bookings/"+id).delete().then(()=>LIVE.db.doc("seats/"+id).delete().catch(()=>{})))).then(()=>toast(ids.length+" live booking"+(ids.length===1?"":"s")+" deleted"),()=>toast("Only organisers with edit rights can delete these"));},
   introdone(){S.introDone=true;render(true);},
   togglepast(){S.showPast=!S.showPast;render(true);},
   pin(k){const s=S.sheet;if(!s||s.type!=="pin")return;if(k==="del")s.code=s.code.slice(0,-1);else if(s.code.length<4)s.code+=k;s.err=false;
