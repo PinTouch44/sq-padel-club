@@ -34,3 +34,14 @@ Sans cette fonction, tout marche quand même, simplement aucun e-mail n'est envo
 Cinq e-mails avec logo: bienvenue, inscription en attente de paiement, inscription confirmée, compte supprimé (et données effacées), mot de passe oublié.
 Les quatre premiers partent de la fonction `notify` (voir plus haut, secrets `BREVO_API_KEY` et `MAIL_FROM`).
 Le mail « mot de passe oublié » envoie un code à 6 chiffres (pas de lien, car Brevo transforme les liens). Il se règle dans Supabase → Authentication → Email Templates → Reset Password: coller `supabase/email-templates/reset-password.html`.
+
+
+## Badges et parrainage (v0.44)
+
+Rien à configurer dans Supabase pour cette version.
+
+- **Badges**: 42 badges (niveaux, 5 ultimes à partir de 50 participations, puis 6 familles). Ils se débloquent tout seuls à partir des présences pointées, des réservations et du profil. Les membres les voient dans Profil, Badges (et un petit compteur discret sur l'accueil). Un badge nouvellement gagné s'ouvre avec l'animation du liseré blanc.
+- **Badges attribués à la main**: Admin, Membres, Modifier un membre, section « Badges and referrals » (Customer Care, Alpha).
+- **Badge d'un événement**: Admin, modifier un événement, section « Badge » (Open, Swissness, Themes Trading, Au siège). Les membres pointés à cet événement reçoivent le badge correspondant.
+- **Parrainage**: chaque membre a un code `SQ-XXXXXX` (Profil, Invitation). Le lien d'invitation WhatsApp contient le code, il pré-remplit le champ à l'inscription. 1, 5 et 10 collègues parrainés débloquent Parrainage, Actionnaire et Unlimited. Au 10e collègue, une participation est offerte: l'admin la voit dans la fiche du membre et peut la marquer comme utilisée.
+- Le département, le code de parrainage et l'ordre d'inscription sont ajoutés aux données minimales des places (table `seats`), pour calculer Fusion, Desk et Par les cornes sans rouvrir la lecture des réservations.
