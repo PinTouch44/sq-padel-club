@@ -45,3 +45,8 @@ Rien à configurer dans Supabase pour cette version.
 - **Badge d'un événement**: Admin, modifier un événement, section « Badge » (Open, Swissness, Themes Trading, Au siège). Les membres pointés à cet événement reçoivent le badge correspondant.
 - **Parrainage**: chaque membre a un code `SQ-XXXXXX` (Profil, Invitation). Le lien d'invitation WhatsApp contient le code, il pré-remplit le champ à l'inscription. 1, 5 et 10 collègues parrainés débloquent Parrainage, Actionnaire et Unlimited. Au 10e collègue, une participation est offerte: l'admin la voit dans la fiche du membre et peut la marquer comme utilisée.
 - Le département, le code de parrainage et l'ordre d'inscription sont ajoutés aux données minimales des places (table `seats`), pour calculer Fusion, Desk et Par les cornes sans rouvrir la lecture des réservations.
+
+## Accueil et billet (v0.45)
+
+- **Accueil**: « Salut Prénom », tes sports en bulles, carrousel « Pour toi » (cartes à faire glisser) puis « Mes réservations ».
+- **Billet**: fond noir, carte qui brille et se penche sous le doigt, QR net qui se remet à plat au relâchement.

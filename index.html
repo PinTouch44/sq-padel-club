@@ -1013,6 +1013,15 @@ a.lrow{text-decoration:none}
 <div id="app"></div>
 
 <style id="tkcss">
+.hcar{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:16px;margin:0 -16px;padding:2px 16px 10px;scrollbar-width:none}.hcar::-webkit-scrollbar{display:none}
+.hcar .pcard{flex:none;width:78%;max-width:300px;height:176px;scroll-snap-align:start}
+.pmix{background:#0b0b0c;color:#fff;margin:0 -16px;padding:4px 16px 18px;border-radius:0;perspective:800px}
+.pmix .sheet-h h2,.pmix .sheet-h .small{color:#fff}.pmix .iconbtn{background:rgba(255,255,255,.14)!important;color:#fff}
+.pmix .wpass{user-select:none;-webkit-user-select:none;transform-style:preserve-3d;transition:transform .14s ease-out;touch-action:pan-y;position:relative}
+.pmix .wpass::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.28) 48%,transparent 62%);background-size:250% 100%;background-position:var(--sx,100%) 0;transition:background-position .14s}
+.pmix .wp-qrbox svg{width:200px;height:200px}
+.pflat{text-align:center;font-size:11px;opacity:.6;margin-top:10px}
+
 .tk3 .tkgems{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.tk3 .tktw{animation:tktw 2.8s ease-in-out infinite}@keyframes tktw{0%,100%{opacity:.78}50%{opacity:1}}
 
 .tks{perspective:900px;display:grid;place-items:center}
@@ -1167,7 +1176,7 @@ const chev='<svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColo
 function courtSVG(stroke,op){return '<svg class="lines" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="'+stroke+'" stroke-opacity="'+(op||.35)+'" stroke-width="2"><rect x="40" y="20" width="320" height="160"/><path d="M200 10v180M88 20v160M312 20v160M88 100h224"/></g></svg>';}
 
 /* ---------- i18n scaffold (EN live, FR prepared) ---------- */
-(function(){try{const m=/[?&]ref=(SQ-[0-9A-Fa-f]{6})/.exec(location.search);if(m)localStorage.setItem("sqpc-ref",m[1].toUpperCase());}catch(err){}})();const APP_VERSION="0.44";
+(function(){try{const m=/[?&]ref=(SQ-[0-9A-Fa-f]{6})/.exec(location.search);if(m)localStorage.setItem("sqpc-ref",m[1].toUpperCase());}catch(err){}})();const APP_VERSION="0.45";
 const STR={en:{home:"Home",events:"Events",bookings:"Bookings",profile:"Profile"},fr:{home:"Accueil",events:"Événements",bookings:"Réservations",profile:"Profil"},de:{home:"Start",events:"Events",bookings:"Buchungen",profile:"Profil"}};
 let LANG=(()=>{try{const l=localStorage.getItem("sqpc-lang");if(l==="fr"||l==="de"||l==="en")return l;}catch(err){}const n=String((navigator.languages&&navigator.languages[0])||navigator.language||"en").slice(0,2).toLowerCase();return n==="fr"||n==="de"?n:"en";})();
 const t=k=>(STR[LANG]&&STR[LANG][k])||STR.en[k]||k;
@@ -1613,15 +1622,14 @@ function mySportsRow(){const my=mySports().map(id=>sportOf(id)).filter(Boolean);
 function homeScreen(){
   const up=plEvents("mine").filter(e=>!isPast(e)&&e.status!=="cancelled");const next=up[0];const mine=up.filter(e=>myReg(e));
   const pastMine=visibleEvents().filter(e=>isPast(e)&&myReg(e)&&myReg(e).checkedIn&&!myReg(e).feedback);const C=DB.content;
-  let h='<div class="screen"><div class="largetitle"><div><h1 class="dateh">'+fmt(S.today,"long")+'</h1>'+bdPill()+'</div><button class="avatar-btn" data-act="tab" data-arg="profile" aria-label="Profile">'+esc(me().first[0]+me().last[0])+'</button></div>';
+  let h='<div class="screen"><div class="largetitle"><div><div class="ltsub">'+fmt(S.today,"long")+'</div><h1 class="dateh">'+T3(["Hi ","Salut ","Hallo "])+esc(me().first)+'</h1>'+bdPill()+'</div><button class="avatar-btn" data-act="tab" data-arg="profile" aria-label="Profile">'+esc(me().first[0]+me().last[0])+'</button></div>';
   if(C.announce.on&&C.announce.text.trim())h+='<div class="announce">'+ic("info")+'<div>'+esc(C.announce.text)+'</div></div>';
   h+=sportStrip();
   if(S.account&&!Array.isArray(S.account.sports))h+='<div class="list mt12"><button class="lrow" data-act="mysports"><span class="lmain"><b>Choose your sports</b><span>Follow the sports you play to see their events</span></span>'+chev+'</button></div>';
   h+=groupRow();
-  if(next)h+='<div class="lh">Next event</div>'+nextCard(next);
+  if(up.length)h+='<div class="lh row between"><span>'+T3(["For you","Pour toi","Für dich"])+'</span><button class="lh-link" data-act="tab" data-arg="events">All events</button></div><div class="hcar">'+up.slice(0,6).map(e=>lcard(e)).join("")+'</div>';
   pastMine.forEach(e=>{h+=feedbackCard(e);});
   if(mine.length)h+='<div class="lh row between"><span>My bookings</span><button class="lh-link" data-act="tab" data-arg="bookings">See all</button></div><div class="list">'+mine.slice(0,3).map(e=>regCard(myReg(e))).join("")+'</div>';
-  h+='<div class="lh row between"><span>Coming up</span><button class="lh-link" data-act="tab" data-arg="events">All events</button></div><div class="list">'+up.slice(1,5).map(e=>lcard(e)).join("")+'</div>';
   return h+'<div style="height:12px"></div></div>';}
 function calLegend(){const sf=S.sportF;const sp=(sf&&sf!=="mine"&&sf!=="all"&&sportOf(sf))?kc(sf).cat:{tournament:"Competition",initiation:"Beginners",special:"Social",big:"Big event"};
   return '<div class="legend" aria-hidden="true">'+["tournament","initiation","special","big"].map(k=>'<span><i class="catdot" style="background:'+catColor[k]+'"></i>'+sp[k]+'</span>').join("")+'</div>';}
@@ -2120,7 +2128,7 @@ function calSheet(s){const e=ev(s.evId);const ds=e.date.replace(/-/g,""),tt=x=>x
     ["Yahoo Calendar","https://calendar.yahoo.com/?v=60&title="+title+"&st="+ds+"T"+tt(e.arrival)+"&et="+ds+"T"+tt(e.end)+"&in_loc="+loc+"&desc="+body,"#6001D2"]];
   return sheetHead("Add to calendar",esc(e.title)+" · "+fmt(e.date,"dm"))+'<div class="list">'+('<button class="lrow" data-act="ics" data-arg="'+e.id+'"><span class="payico" style="background:#FF3B30">'+ic("cal")+'</span><span class="lmain"><b style="font-weight:500">Apple Calendar</b><span>Then choose “Calendar” and tap “Add”</span></span>'+chev+'</button>')+L.map(([l,u,c])=>'<a class="lrow" style="text-decoration:none;color:inherit" target="_blank" rel="noopener" href="'+u+'"><span class="payico" style="background:'+c+'">'+ic("cal")+'</span><span class="lmain"><b style="font-weight:500">'+l+'</b></span>'+chev+'</a>').join("")+'</div>'+''+'<button class="btn btn-plain btn-block mt12" data-act="copy" data-arg="'+esc(e.title+"\n"+fmt(e.date,"long")+"\nSuggested arrival "+e.arrival+" · "+e.start+"–"+e.end+"\n"+e.venue+", "+e.address)+'">Copy event details</button>';}
 function passSheet(s){const r=DB.regs.find(x=>x.id===s.regId);if(!r)return sheetHead("Booking")+empty("info","Booking not found","It may have been cancelled.");const e=ev(r.eventId);
-  return sheetHead("Your pass")+passCard(r)+(r.status!=="cancelled"?'<div class="mt12">'+payBanner(r)+'</div>':'')+(r.payment==="unpaid"&&r.status!=="cancelled"?'<button class="btn '+(r.payMethod?"btn-plain":"btn-primary")+' btn-block mt12" data-act="paynow" data-arg="'+r.id+'">'+(r.payMethod?"Payment instructions or change method":"Choose how to pay · "+chf(r.total))+'</button>':'')+'<div class="grid2 mt12"><button class="btn btn-plain" data-act="calsheet" data-arg="'+e.id+'">'+ic("cal",'style="width:18px;height:18px"')+'Calendar</button><button class="btn btn-plain" data-act="dirsheet" data-arg="'+e.id+'">'+ic("pin",'style="width:18px;height:18px"')+'Directions</button></div><div class="mt12">'+regInfo(r)+'</div>'+(!isPast(e)&&r.status!=="cancelled"?'<button class="btn btn-danger btn-block mt12" data-act="cancelreg" data-arg="'+r.id+'">Cancel booking</button>':'');}
+  return '<div class="pmix">'+sheetHead("Your pass")+passCard(r)+'<div class="pflat">'+T3(["Slide a finger over the card","Glisse le doigt sur la carte","Streiche mit dem Finger über die Karte"])+'</div></div>'+(r.status!=="cancelled"?'<div class="mt12">'+payBanner(r)+'</div>':'')+(r.payment==="unpaid"&&r.status!=="cancelled"?'<button class="btn '+(r.payMethod?"btn-plain":"btn-primary")+' btn-block mt12" data-act="paynow" data-arg="'+r.id+'">'+(r.payMethod?"Payment instructions or change method":"Choose how to pay · "+chf(r.total))+'</button>':'')+'<div class="grid2 mt12"><button class="btn btn-plain" data-act="calsheet" data-arg="'+e.id+'">'+ic("cal",'style="width:18px;height:18px"')+'Calendar</button><button class="btn btn-plain" data-act="dirsheet" data-arg="'+e.id+'">'+ic("pin",'style="width:18px;height:18px"')+'Directions</button></div><div class="mt12">'+regInfo(r)+'</div>'+(!isPast(e)&&r.status!=="cancelled"?'<button class="btn btn-danger btn-block mt12" data-act="cancelreg" data-arg="'+r.id+'">Cancel booking</button>':'');}
 function liveChip(){return LIVE.state==="on"?'<span class="livechip on"><i></i>Live sync on</span>':'<span class="livechip"><i></i>This device only</span>';}
 function scanResult(sel){const s=S.admin.scan;if(!s)return '<div class="panel muted small">Scan a pass to see the booking, payment, racket and guests.</div>';
   if(s.err)return '<div class="scanres bad"><div class="sr-head">'+ic("x")+'<div><b>'+esc(s.err)+'</b><span>'+esc(s.sub||"")+'</span></div></div></div>';
@@ -3172,6 +3180,11 @@ function bdFlagSelect(d){const cur=d.badge||"";return '<div class="field"><label
 
 function refSaved(){try{return localStorage.getItem("sqpc-ref")||"";}catch(err){return "";}}
 function refValid(c){return /^SQ-[0-9A-F]{6}$/.test(String(c||"").trim().toUpperCase())&&String(c).trim().toUpperCase()!==myRefCode();}
+
+
+(function(){const tl=(e)=>{const w=e.target.closest&&e.target.closest(".pmix .wpass");if(!w)return;const r=w.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;w.style.transform="rotateY("+(x*16)+"deg) rotateX("+(-y*16)+"deg)";w.style.setProperty("--sx",(100-(x+.5)*200)+"%");};
+const rs=()=>{document.querySelectorAll(".pmix .wpass").forEach(w=>{w.style.transform="";w.style.setProperty("--sx","100%");});};
+document.addEventListener("pointermove",e=>{if(e.buttons||e.pointerType==="touch")tl(e);});document.addEventListener("pointerdown",tl);["pointerup","pointercancel"].forEach(t=>document.addEventListener(t,rs));})();
 
 i18nStart();
 try{const th=localStorage.getItem("sqpc-theme");if(th)S.theme=th;}catch(err){}
